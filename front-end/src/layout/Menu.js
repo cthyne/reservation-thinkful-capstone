@@ -1,5 +1,5 @@
 import React from "react";
-
+import "./Menu.css";
 import { Link } from "react-router-dom";
 
 /**
@@ -17,7 +17,7 @@ function Menu() {
           to="/"
         >
           <div className="sidebar-brand-text mx-3">
-            <span>Reservation App</span>
+            <span>Periodic Tables</span>
           </div>
         </Link>
         <hr className="sidebar-divider my-0" />
