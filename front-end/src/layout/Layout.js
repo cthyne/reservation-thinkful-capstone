@@ -1,8 +1,8 @@
 import React from "react";
+import "./Layout.css";
 import Menu from "./Menu";
 import Routes from "./Routes";
 
-import "./Layout.css";
 
 /**
  * Defines the main layout of the application.
@@ -14,11 +14,13 @@ import "./Layout.css";
 function Layout() {
   return (
     <div className="container-fluid">
-      <div className="row h-100">
+      <div className="row">
+
         <div className="col-md-2 side-bar">
           <Menu />
         </div>
-        <div className="col">
+
+        <div className="col main-area">
           <Routes />
         </div>
       </div>
