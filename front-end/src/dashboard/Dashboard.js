@@ -1,141 +1,106 @@
 import React, { useEffect, useState } from "react";
-import useQuery from "../utils/useQuery";
-import {
-  listReservations,
-  listTables,
-  clearTable,
-  changeResStatus,
-} from "../utils/api";
-import { next, previous, today } from "../utils/date-time";
+import { listReservations, listTables} from "../utils/api";
+import {previous, today, next} from "../utils/date-time";
 import ErrorAlert from "../layout/ErrorAlert";
-import ReservationDisplay from "../layout/reservations/ReservationDisplay";
-import TableDisplay from "../layout/tables/TableDisplay";
-import { Link, useRouteMatch } from "react-router-dom";
-//test
+import ListReservations from "./ListReservations";
+import ListTables from "./ListTables";
+import { Link, useLocation} from "react-router-dom";
+import queryString from "query-string";
+
+
 /**
  * Defines the dashboard page.
  * @param date
  *  the date for which the user wants to view reservations.
  * @returns {JSX.Element}
  */
-function Dashboard({ date, setDate }) {
+function Dashboard({ date }) {
   const [reservations, setReservations] = useState([]);
-  const [tables, setTables] = useState([]);
   const [reservationsError, setReservationsError] = useState(null);
-  const route = useRouteMatch();
-  const query = useQuery();
 
-  useEffect(() => {
-    function updateDate() {
-      const dateQ = query.get("date");
-      if (dateQ) {
-        setDate(dateQ);
-      } else {
-        setDate(today());
-      }
-    }
-    updateDate();
-  }, [query, setDate, route]);
+  const [dateOfReservations, setDateOfReservations] = useState(date);
 
-  useEffect(loadDashboard, [date]);
+  const {search} = useLocation();
+  const searchDate = queryString.parse(search).date;
+  const [tables, setTables] = useState([]);
+  const [tablesError, setTablesError] = useState(null);
+
+  useEffect(loadTables,[]);
+  useEffect(loadDashboard, [search, dateOfReservations, date, searchDate]);
+  useEffect(resetDate, [search, date]);
+  
+  function loadTables() {
+      const abortController = new AbortController();
+      setTablesError(null);
+      listTables(abortController.signal)
+        .then(setTables)
+        .catch(setTablesError)
+          
+      return () => abortController.abort();
+  };
 
   function loadDashboard() {
     const abortController = new AbortController();
     setReservationsError(null);
-    listTables(abortController.signal).then(setTables);
-    listReservations({ date }, abortController.signal)
+
+    if (searchDate) {
+    setDateOfReservations(searchDate.slice(0,10));
+    listReservations({date: searchDate}, abortController.signal).then(setReservations).catch(setReservationsError)
+      } else {
+    setDateOfReservations(date)
+    listReservations({date}, abortController.signal)
       .then(setReservations)
-      .catch(setReservationsError);
-  }
+      .catch(setReservationsError)
+      };
+      return () => abortController.abort();
+  };
 
-  const handleClear = async (table) => {
+  function resetDate() {
+    if(search) return
     const abortController = new AbortController();
-
-    try {
-      if (window.confirm("Is this table ready to seat new guests?")) {
-        await clearTable(table, abortController.signal);
-        loadDashboard();
-      }
-      loadDashboard();
-    } catch (err) {
-      if (err.name !== "AbortError") {
-        setReservationsError(err);
-      }
-      console.log("Abort");
-    }
+    setDateOfReservations(date)
     return () => abortController.abort();
   };
 
-  const handleCancel = async (resId) => {
-    const abortController = new AbortController();
-    const status = { status: "cancelled" };
-    try {
-      if (
-        window.confirm(
-          "Do you want to cancel this reservation? This cannot be undone."
-        )
-      ) {
-        await changeResStatus(resId, status, abortController.signal);
-        loadDashboard();
-      }
-    } catch (err) {
-      if (err.name !== "AbortError") {
-        setReservationsError(err);
-      }
-      console.log("Abort");
-    }
-    return () => abortController.abort();
-  };
 
-  return (
-    <>
-      <main className="m-3">
-        <div className="page-head-container">
-          <h1>Dashboard</h1>
-          <div className="mb-3">
-            <h3 className="mb-0">
-              Reservations for date:{" "}
-              <span>
-                <p>{date}</p>
-              </span>
-            </h3>
-          </div>
-          <div className="date-button-container m-2">
-            <Link
-              className="btn  date-button mb-2"
-              to={`/dashboard?date=${previous(date)}`}
-            >
-              Previous
-            </Link>
-            <Link
-              className="btn date-button mb-2"
-              to={`/dashboard?date=${today()}`}
-            >
-              Today
-            </Link>
-            <Link
-              className="btn date-button mb-2"
-              to={`/dashboard?date=${next(date)}`}
-            >
-              Next
-            </Link>
+
+  return (<>
+      <div className="container p-3 my-2 bg-secondary text-white">
+        <div className="row justify-content-center">
+          <div className="col-5.5 border border-primary p-3 mb-2 bg-dark text-white">
+            <h1 className="m-3 pl-3">Reservations Dashboard</h1>
           </div>
         </div>
-        <ErrorAlert error={reservationsError} />
-        <div className="header-bar">
-          <h1>Reservations</h1>
+
+        <div className="row justify-content-center">
+          <div className="col-1.5">
+          <button id="today" type="today" className="btn btn-outline-primary btn m-2"><Link to={`/dashboard?date=${previous(dateOfReservations)}`}>Previous</Link></button>
+          </div>
+          <div className="col-1.5">
+          <button  id="today" type="today" className="btn btn-outline-primary btn m-2"><Link to={`/dashboard?date=${today()}`}>Today</Link></button>
+          </div>
+          <div className="col-1.5">
+          <button id="next" type="next" className="btn btn-outline-primary btn m-2"><Link to={`/dashboard?date=${next(dateOfReservations)}`}>Next</Link></button>
+          </div>
         </div>
-        <ReservationDisplay
-          reservations={reservations}
-          handleCancel={handleCancel}
-        />
-        <div className="header-bar">
-          <h1>Tables</h1>
+        <div className="row justify-content-center">
+          <div className="col-2.5">
+            <h4 className="m-3">{dateOfReservations}</h4>
+          </div>
+          </div>
+        <div className="row justify-content-center">
+          <div className="col-3">
+            <input type="date" className="form-control" name="reservation_date" id="reservation_date" placeholder="Date of Reservation"/>
+          </div>
         </div>
-        <TableDisplay tables={tables} handleClear={handleClear} />
-      </main>
-    </>
-  );
-}
+      </div>
+      <ErrorAlert error={tablesError} />
+      <ErrorAlert error={reservationsError} />
+      <div className="container p-3 my-2">    
+      <ListReservations reservations={reservations} loadDashboard={loadDashboard}/>
+     <ListTables tables={tables} loadDashboard={loadDashboard} loadTables={loadTables}/>
+    </div>
+  </>);
+};
 
 export default Dashboard;
