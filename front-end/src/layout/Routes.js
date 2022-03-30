@@ -8,7 +8,7 @@ import NotFound from "./NotFound";
 import { today } from "../utils/date-time";
 import SearchReservation from "../search/SearchReservation";
 import EditReservation from "../reservations/EditReservation";
-import SeatReservation from "../reservations/SeatReservation";
+import ReservationSeat from "../reservations/SeatReservation";
 //import { useParams } from "react-router";
 
 /**
@@ -42,7 +42,7 @@ function Routes() {
         <EditReservation />
       </Route>
       <Route exact={true} path="/reservations/:reservation_id/seat">
-        <SeatReservation />
+        <ReservationSeat />
       </Route>
       <Route exact={true} path="/tables/new">
         <NewTable />

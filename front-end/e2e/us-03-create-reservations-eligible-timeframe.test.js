@@ -41,11 +41,13 @@ describe("US-03 - Create reservation on a future, working date - E2E", () => {
 
     test("displays an error message if reservation time is before 10:30 AM", async () => {
       await page.type("input[name=reservation_date]", "02022035");
-      await page.type("input[name=reservation_time]", "10:15AM");
+      await page.type("input[name=reservation_time]", "1015AM");
 
       await page.screenshot({
         path: ".screenshots/us-02-reservation-too-early-before.png",
       });
+
+      expect(await page.$(".alert-danger")).toBeFalsy();
 
       await page.click("button[type=submit]");
 
@@ -86,6 +88,7 @@ describe("US-03 - Create reservation on a future, working date - E2E", () => {
       expect(await page.$(".alert-danger")).toBeFalsy();
 
       await page.click("button[type=submit]");
+  
 
       await page.screenshot({
         path: ".screenshots/us-02-reservation-too-late-after.png",

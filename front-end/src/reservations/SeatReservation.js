@@ -3,7 +3,7 @@ import { useHistory, useParams } from "react-router";
 import { listTables, updateSeat } from "../utils/api";
 import ErrorAlert from "../layout/ErrorAlert";
 
-function SeatReservation() {
+function ReservationSeat() {
   const history = useHistory();
   const cancelClickHandler = () => history.goBack();
 
@@ -93,4 +93,4 @@ const tableFormChangeHandler = (event) => setTableFormData(event.target.value)
 }
 
 
-export default SeatReservation;
+export default ReservationSeat;
