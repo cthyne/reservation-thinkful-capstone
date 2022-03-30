@@ -1,106 +1,138 @@
 import React, { useEffect, useState } from "react";
-import { listReservations, listTables} from "../utils/api";
-import {previous, today, next} from "../utils/date-time";
+import { listReservations, listTables } from "../utils/api";
+import useQuery from "../utils/useQuery";
 import ErrorAlert from "../layout/ErrorAlert";
-import ListReservations from "./ListReservations";
-import ListTables from "./ListTables";
-import { Link, useLocation} from "react-router-dom";
-import queryString from "query-string";
+import ReservationDetail from "../reservations/ReservationDetail";
+import TableDetail from "../tables/TableDetail";
+import { previous, next, today } from "../utils/date-time";
+import { Link } from "react-router-dom";
 
-
-/**
- * Defines the dashboard page.
- * @param date
- *  the date for which the user wants to view reservations.
- * @returns {JSX.Element}
- */
+// Dashboard page
 function Dashboard({ date }) {
   const [reservations, setReservations] = useState([]);
   const [reservationsError, setReservationsError] = useState(null);
-
-  const [dateOfReservations, setDateOfReservations] = useState(date);
-
-  const {search} = useLocation();
-  const searchDate = queryString.parse(search).date;
-  const [tables, setTables] = useState([]);
   const [tablesError, setTablesError] = useState(null);
+  const [tables, setTables] = useState([]);
+  const query = useQuery();
+  const dateQuery = query.get("date");
 
-  useEffect(loadTables,[]);
-  useEffect(loadDashboard, [search, dateOfReservations, date, searchDate]);
-  useEffect(resetDate, [search, date]);
-  
-  function loadTables() {
-      const abortController = new AbortController();
-      setTablesError(null);
-      listTables(abortController.signal)
-        .then(setTables)
-        .catch(setTablesError)
-          
-      return () => abortController.abort();
-  };
+  if (dateQuery) date = dateQuery;
 
-  function loadDashboard() {
+    // formats the date variable to be human readable
+    const dateObj = new Date(`${date} PDT`);
+    const dateString = dateObj.toDateString();
+
+    console.log(dateString)
+
+  // Get request of reservations by date
+  useEffect(() => {
     const abortController = new AbortController();
-    setReservationsError(null);
 
-    if (searchDate) {
-    setDateOfReservations(searchDate.slice(0,10));
-    listReservations({date: searchDate}, abortController.signal).then(setReservations).catch(setReservationsError)
-      } else {
-    setDateOfReservations(date)
-    listReservations({date}, abortController.signal)
-      .then(setReservations)
-      .catch(setReservationsError)
-      };
-      return () => abortController.abort();
-  };
-
-  function resetDate() {
-    if(search) return
-    const abortController = new AbortController();
-    setDateOfReservations(date)
+    async function loadReservations() {
+      setReservationsError(null);
+      try {
+        const data = await listReservations({ date }, abortController.signal);
+        setReservations(data);
+      } catch (error) {
+        setReservationsError(error);
+      }
+    }
+    loadReservations();
     return () => abortController.abort();
-  };
+  }, [date]);
+
+  // loads all tables
+  useEffect(() => {
+    const abortController = new AbortController();
+
+    async function loadTables() {
+      setReservationsError(null);
+      try {
+        const data = await listTables(abortController.signal);
+        setTables(data);
+      } catch (error) {
+        setTablesError(error);
+      }
+    }
+
+    loadTables();
+
+    return () => abortController.abort();
+  }, []);
+
+  // filters `reservations` with statuses "booked" and "seated"
+  const unfinishedReservations = reservations.filter(
+    (reservation) => reservation.status !== "finished"
+  );
+
+//   return (
+//     <main>
+//       <h1 className="my-3">Dashboard</h1>
+//       <div className="d-md-flex mb-3">
+//         <h4 className="mb-0">
+//           {reservations.length < 1 && "No "}
+//           {`Reservations for`}&nbsp;
+//         </h4>
+//         <h4 className="fw-bold">{date}</h4>
+//       </div>
+//       <ErrorAlert error={reservationsError} />
+//       <Buttons date={date} />
+//       <ReservationDetail reservations={unfinishedReservations} />
+//       <br></br>
+//       <hr></hr>
+//       <div className="d-md-flex mb-3">
+//         <h4 className="mb-0">List of Tables</h4>
+//       </div>
+//       <ErrorAlert error={tablesError} />
+//       <TableDetail tables={tables} />
+//     </main>
+//   );
 
 
+  return (
+    <main>
+      <div className="headingBar d-md-flex my-3 p-2">
+        <h1>Dashboard</h1>
+      </div>
+      <ErrorAlert error={reservationsError} />
+      <div className="d-flex justify-content-center my-3">
+        <h4 className="mb-0">Reservations for {dateString}</h4>
+      </div>  
+      <div className="d-flex justify-content-center mt-3">
+        <Link to={`/dashboard?date=${previous(date)}`}>
+          <button className="btn btn-dark" type="button">
+            <span className="oi oi-arrow-thick-left" />
+            &nbsp;Previous Day
+          </button>
+        </Link>
+        <Link to={`/dashboard?date=${today()}`}>
+          <button className="btn btn-dark mx-3" type="button">Today</button>
+        </Link>
+        <Link to={`/dashboard?date=${next(date)}`}>
+          <button className="btn btn-dark" type="button">
+            Next Day&nbsp;
+            <span className="oi oi-arrow-thick-right" />
+          </button>
+        </Link>
+      </div>
 
-  return (<>
-      <div className="container p-3 my-2 bg-secondary text-white">
-        <div className="row justify-content-center">
-          <div className="col-5.5 border border-primary p-3 mb-2 bg-dark text-white">
-            <h1 className="m-3 pl-3">Reservations Dashboard</h1>
-          </div>
+      <div className="d-md-flex mb-3 frame">
+      <div className="mb-3"> 
+        <div className="headingBar my-3 p-2">
+            <h2>Reservations</h2>
         </div>
-
-        <div className="row justify-content-center">
-          <div className="col-1.5">
-          <button id="today" type="today" className="btn btn-outline-primary btn m-2"><Link to={`/dashboard?date=${previous(dateOfReservations)}`}>Previous</Link></button>
-          </div>
-          <div className="col-1.5">
-          <button  id="today" type="today" className="btn btn-outline-primary btn m-2"><Link to={`/dashboard?date=${today()}`}>Today</Link></button>
-          </div>
-          <div className="col-1.5">
-          <button id="next" type="next" className="btn btn-outline-primary btn m-2"><Link to={`/dashboard?date=${next(dateOfReservations)}`}>Next</Link></button>
-          </div>
+        <ReservationDetail reservations={unfinishedReservations} />
         </div>
-        <div className="row justify-content-center">
-          <div className="col-2.5">
-            <h4 className="m-3">{dateOfReservations}</h4>
+        <div className="mb-3 mx-3"> 
+          <div className="headingBar my-3 p-2">
+              <h2>Tables</h2>
           </div>
-          </div>
-        <div className="row justify-content-center">
-          <div className="col-3">
-            <input type="date" className="form-control" name="reservation_date" id="reservation_date" placeholder="Date of Reservation"/>
-          </div>
+            <ErrorAlert error={tablesError} />
+            <TableDetail tables={tables} />
         </div>
       </div>
-      <ErrorAlert error={tablesError} />
-      <ErrorAlert error={reservationsError} />
-      <div className="container p-3 my-2">    
-      <ListReservations reservations={reservations} loadDashboard={loadDashboard}/>
-     <ListTables tables={tables} loadDashboard={loadDashboard} loadTables={loadTables}/>
-    </div>
-  </>);
-};
+    </main>
+  );
+}
 
 export default Dashboard;

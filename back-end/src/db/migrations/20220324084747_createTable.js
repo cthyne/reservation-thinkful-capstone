@@ -1,19 +1,19 @@
 
-exports.up = function (knex) {
-  return knex.schema.createTable('tables', table => {
-    table.increments('table_id').primary()
-    table.string('table_name')
-    table.integer('capacity')
-    table.integer('reservation_id').unsigned()
+exports.up = function(knex) {
+  return knex.schema.createTable("tables", (table) => {
+    table.increments("table_id").primary() // sets table_id as the primary key
+    table.string("table_name").notNullable()
+    table.integer("capacity").notNullable()
+    table.integer("reservation_id").unsigned()
     table
-      .foreign('reservation_id')
-      .references('reservation_id')
+      .foreign("reservation_id")
+      .references("reservation_id")
       .inTable("reservations")
-      .onDelete('cascade')
+      .onDelete("cascade");
     table.timestamps(true, true)
   })
-}
+};
 
-exports.down = function (knex) {
-  return knex.schema.dropTable('tables')
-}
+exports.down = function(knex) {
+  return knex.schema.dropTable("tables");
+};

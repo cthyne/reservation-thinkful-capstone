@@ -1,72 +1,99 @@
-import React, { useState } from 'react'
-import { useHistory } from 'react-router-dom'
-import { createTable } from '../utils/api';
-import ErrorAlert from '../layout/ErrorAlert';
+import { useState } from "react";
+import { useHistory } from "react-router";
+import { createTable } from "../utils/api";
+import ErrorAlert from "../layout/ErrorAlert";
 
+// Creates a new table
 
-function NewTable () {
-  const history = useHistory()
+function NewTable() {
+    // cancel click handler
+    const cancelClickHandler = () => history.goBack();
+
+  const history = useHistory();
   const [tableName, setTableName] = useState("");
-  const [capacity, setCapacity] = useState("");
-  const [error, setError] = useState(null);
+  const [capacity, setCapacity] = useState(0);
+  const [error, setError] = useState("");
 
+  //change handlers
+  const tableNameChangeHandler = (event) => setTableName(event.target.value);
+  const capacityChangeHandler = (event) => setCapacity(event.target.value);
 
-  async function handleSubmit (event) {
+  // submit handler
+  // upon clicking submit, a new table is
+  async function handleSubmit(event) {
     event.preventDefault();
+    const abortController = new AbortController();
     const newTable = {
       table_name: tableName,
-      capacity: Number(capacity)
-    }
-    console.log(newTable)
+      capacity: Number(capacity),
+    };
+
     try {
-      await createTable(newTable)
-    } catch(error) {
-      setError(error)
+      await createTable(newTable, abortController.signal);
+    } catch (error) {
+      setError(error);
       return;
     }
-    history.push('/dashboard')
+
+    history.push(`/dashboard`);
+    return () => abortController.abort();
   }
 
   return (
-    <main>
-      <h1>Add a new Table</h1>
-      <form>
-        <div className='form-group'>
-          <label className='table_name'>Table Name</label>
-          <input 
-          name='table_name' 
-          id='table_name' 
-          type='text' 
-          value={tableName}
-          onChange={(event) => setTableName(event.target.value)}/>
+        <main>
+        <div className="headingBar d-md-flex my-3 p-2">
+            <h1>New Table</h1>
         </div>
-        <div className='form-group'>
-          <label className='capacity'>Capacity</label>
-          <input 
-           name='capacity'
-           id='capacity' 
-           type='number'
-           value={capacity}
-           onChange={(event) => setCapacity(event.target.valueAsNumber)} />
-        </div>
-        <button
-          type='button'
-          className='btn btn-secondary'
-          onClick={() => history.goBack()}
-        >
-          Cancel
-        </button>
-        <button
-          type='submit'
-          className='btn btn-primary'
-          onClick={handleSubmit}
-        >
-          Submit
-        </button>
-      </form>
-      <ErrorAlert error={error} />
-    </main>
-  )
+          <ErrorAlert error={error} />
+          <form onSubmit={handleSubmit} className="form-group">
+            <div className="row mb-3">
+              <div className="col-4 form-group">
+                <label className="form-label" htmlFor="table_name"> Table Name </label>
+                <input
+                  className="form-control"
+                  name="table_name"
+                  id="table_name"
+                  required={true}
+                  type="text"
+                  onChange={tableNameChangeHandler}
+                  value={tableName}
+    
+                />
+                <small className="form-text text-muted"> Enter Table Name </small>
+              </div>
+              <div className="col-4 form-group">
+                <label className="form-label" htmlFor="capacity"> Table Capacity </label>
+                <input
+                  className="form-control"
+                  name="capacity"
+                  id="capacity"
+                  required={true}
+                  type="text"
+                  onChange={capacityChangeHandler}
+                  value={capacity}
+    
+                />
+                <small className="form-text text-muted"> Enter Table Capacity </small>
+              </div>
+            </div>
+            
+            <button
+              type="submit"
+              className="btn btn-dark"
+              disabled={tableName.length < 2}
+            >
+              Submit 
+            </button>
+            <button
+              type="button"
+              className="btn btn-dark mx-3"
+              onClick={cancelClickHandler}
+            >
+              Cancel
+            </button>
+          </form>
+        </main>
+      );
 }
 
 export default NewTable
